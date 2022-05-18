@@ -1,0 +1,280 @@
+-- #1 COMBINING ALL THE DATA INTO A SINGLE DATASET AND SAVE
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2020_12` AS dec_20
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_01` AS jan_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_02` AS feb_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_03` AS mar_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_04` AS apr_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_05` AS may_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_06` AS jun_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_07` AS jul_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_08` AS aug_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_09` AS sep_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_10` AS oct_21
+
+UNION ALL
+
+SELECT 
+ * 
+FROM `logical-acumen-338816.cyclistic.2021_11` AS nov_21
+
+-- #2 CLEANING NULL VALUES FROM STATION NAME
+SELECT 
+*
+FROM `logical-acumen-338816.cyclistic.all_data`
+
+WHERE
+start_station_name IS NOT NULL
+AND
+end_station_name IS NOT NULL
+
+-- #3 REMOVING LATITUDE AND LONGITUDE FROM TABLE
+SELECT 
+ride_id,
+rideable_type AS bike_type,
+start_station_name,
+end_station_name,
+member_casual AS member_type,
+started_at,
+ended_at,
+
+FROM
+
+(SELECT 
+*
+FROM `logical-acumen-338816.cyclistic.all_data`
+
+WHERE
+start_station_name IS NOT NULL
+AND
+end_station_name IS NOT NULL
+)
+
+-- #4 FINDIND RIDING TIME
+
+SELECT 
+ride_id,
+rideable_type AS bike_type,
+start_station_name,
+end_station_name,
+member_casual AS member_type,
+started_at,
+ended_at,
+DATETIME_DIFF(ended_at, started_at, minute) AS ride_time
+FROM
+
+(SELECT 
+*
+FROM `logical-acumen-338816.cyclistic.all_data`
+
+WHERE
+start_station_name IS NOT NULL
+AND
+end_station_name IS NOT NULL
+)
+
+-- #5 REMOVING NEGATIVE RIDE TIMES
+SELECT *
+
+FROM
+
+(SELECT 
+ride_id,
+rideable_type AS bike_type,
+start_station_name,
+end_station_name,
+member_casual AS member_type,
+started_at,
+ended_at,
+DATETIME_DIFF(ended_at, started_at, minute) AS ride_time
+FROM
+
+(SELECT 
+*
+FROM `logical-acumen-338816.cyclistic.all_data`
+
+WHERE
+start_station_name IS NOT NULL
+AND
+end_station_name IS NOT NULL
+)
+)
+WHERE ride_time > 0 
+ORDER BY ride_time DESC
+-- #6 REMOVE REPAIR STATIONS AND EXTRACT DAY OF WEEK AND MONTH AND SAVE INTO A NEW DATA SET FOR ANALYSIS 
+
+SELECT
+ride_id,
+member_type,
+bike_type,
+start_station_name,
+end_station_name,
+started_at,
+ended_at,
+ride_time,
+CASE
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 1 THEN 'Mon'
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 2 THEN 'Tues'
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 3 THEN 'Wed'
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 4 THEN 'Thur'
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 5 THEN 'Fri'
+    WHEN EXTRACT(DAYOFWEEK FROM started_at) = 6 THEN 'Sat'
+    ELSE 'Sun'
+    END AS day_of_week,
+CASE
+    WHEN EXTRACT(MONTH FROM started_at) = 1 THEN 'Jan'
+    WHEN EXTRACT(MONTH FROM started_at) = 2 THEN 'Feb'
+    WHEN EXTRACT(MONTH FROM started_at) = 3 THEN 'Mar'
+    WHEN EXTRACT(MONTH FROM started_at) = 4 THEN 'Apr'
+    WHEN EXTRACT(MONTH FROM started_at) = 5 THEN 'May'
+    WHEN EXTRACT(MONTH FROM started_at) = 6 THEN 'Jun'
+    WHEN EXTRACT(MONTH FROM started_at) = 7 THEN 'Jul'
+    WHEN EXTRACT(MONTH FROM started_at) = 8 THEN 'Aug'
+    WHEN EXTRACT(MONTH FROM started_at) = 9 THEN 'Sep'
+    WHEN EXTRACT(MONTH FROM started_at) = 10 THEN'Oct'
+    WHEN EXTRACT(MONTH FROM started_at) = 11 THEN 'Nov'
+    ELSE 'Dec'
+    END AS month
+
+FROM
+    (SELECT  
+    *
+    FROM 
+    `logical-acumen-338816.cyclistic.all_data_clean_v1`
+    WHERE
+    start_station_name <> '351' AND
+    end_station_name <> '351' AND
+    start_station_name <> 'DIVVY CASSETTE REPAIR MOBILE STATION' AND
+    end_station_name <> 'DIVVY CASSETTE REPAIR MOBILE STATION' AND
+    start_station_name <> 'Lyft Driver Center Private Rack' AND
+    end_station_name <> 'Lyft Driver Center Private Rack' AND
+    start_station_name <> 'Base - 2132 W Hubbard Warehouse' AND
+    end_station_name <> 'Base - 2132 W Hubbard Warehouse' AND
+    start_station_name <> 'Hubbard Bike-checking (LBS-WH-TEST)' AND
+    end_station_name <> 'Hubbard Bike-checking (LBS-WH-TEST)'AND
+    start_station_name <> 'WEST CHI-WATSON'AND
+    end_station_name <> 'WEST CHI-WATSON'
+
+    ORDER BY ride_time DESC
+)
+
+--TIME TO ANALYZE THE DATA
+--#7 FINDING WHICH MEMBER TYPE HAS THE MOST RIDES
+
+SELECT
+member_type,
+COUNT(*) AS number_of_rides
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type
+ORDER BY number_of_rides DESC
+
+--#8 FINDING THE AVERAGE AND MAX RIDE_TIME PER TYPE OF MEMBER
+
+SELECT
+member_type,
+ROUND(AVG(ride_time),2) AS avg_ride_time,
+MAX(ride_time) AS max_ride_time
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type
+
+--#9 FINDING THE PREFER BYKE TYPE BY EACH TYPE OF MEMBER
+
+SELECT
+member_type,
+bike_type,
+COUNT(*) AS number_of_rides
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type, bike_type
+
+--#10 FINDING THE MONTHS WITH MOST RIDES
+
+SELECT
+member_type,
+month,
+COUNT(*) AS number_of_rides
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type, month
+ORDER BY number_of_rides DESC
+
+--#11 FINDING THE DAYS OF THE WEEK WITH MOST RIDES
+SELECT
+member_type,
+day_of_week,
+COUNT(*) AS number_of_rides
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type, day_of_week
+ORDER BY number_of_rides DESC
+
+--#12 FINDING THE HOURS WITH MOST RIDES DURING THE DAY
+
+SELECT
+member_type,
+EXTRACT (HOUR from started_at) AS time_of_the_day,
+COUNT(*) AS number_of_rides
+
+FROM `logical-acumen-338816.cyclistic.all_data_clean_v2`
+
+GROUP BY member_type, time_of_the_day
+ORDER BY number_of_rides DESC
